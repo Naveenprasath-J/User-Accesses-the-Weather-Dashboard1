@@ -1,0 +1,63 @@
+import javax.swing.*;
+import java.awt.*;
+import java.io.*;
+import java.net.*;
+import org.json.*;
+
+public class WeatherDashboard {
+    private static final String API_KEY = "YOUR_API_KEY";
+    private static final String API_URL = "http://api.openweathermap.org/data/2.5/weather?q=%s&appid=" + API_KEY;
+
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Weather Dashboard");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(400, 300);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+        JTextField cityField = new JTextField(20);
+        JButton searchButton = new JButton("Get Weather");
+        JTextArea weatherArea = new JTextArea(10, 30);
+        weatherArea.setEditable(false);
+
+        panel.add(new JLabel("Enter City:"));
+        panel.add(cityField);
+        panel.add(searchButton);
+        panel.add(new JScrollPane(weatherArea));
+
+        searchButton.addActionListener(e -> {
+            String city = cityField.getText();
+            String weatherData = getWeatherData(city);
+            weatherArea.setText(weatherData);
+        });
+
+        frame.add(panel);
+        frame.setVisible(true);
+    }
+
+    private static String getWeatherData(String city) {
+        try {
+            URL url = new URL(String.format(API_URL, city));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+            reader.close();
+
+            JSONObject jsonResponse = new JSONObject(response.toString());
+            JSONObject main = jsonResponse.getJSONObject("main");
+            double temperature = main.getDouble("temp") - 273.15;
+            String weatherDescription = jsonResponse.getJSONArray("weather").getJSONObject(0).getString("description");
+
+            return String.format("Temperature: %.2f°C\nWeather: %s", temperature, weatherDescription);
+        } catch (Exception e) {
+            return "Error retrieving weather data.";
+        }
+    }
+}
